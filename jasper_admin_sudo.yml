@@ -1,0 +1,6 @@
+---
+- hosts: all
+
+  tasks:
+  - name: sudo checks - jasper_admin
+    action: lineinfile dest=/etc/sudoers.d/jasper_admin regexp="^\W*%jasper_admin" line="%jasper_admin ALL=(root) /bin/su - jasper" state=present create=yes mode=0440

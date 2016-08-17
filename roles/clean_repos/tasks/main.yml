@@ -1,0 +1,17 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+  - block: # RHEL deived specif bits
+    ######### RHEL tasks ########
+    - name: clean old repos
+      action: file
+        dest={{item}}
+        state=absent
+      ignore_errors: True
+      with_items:
+        - /etc/yum.repos.d/oracle.repo
+        - /etc/yum.repos.d/cd.repo
+
+
+

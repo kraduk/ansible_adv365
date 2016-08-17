@@ -1,0 +1,109 @@
+---
+
+#########################################
+# os agnostic exim bits
+# #######################################
+  - block: 
+    - name: setup hosts
+      action: lineinfile
+        dest=/etc/hosts 
+        regexp={{item.r}} 
+        line='{{item.l}}' 
+        create=yes
+      with_items:
+        - { r: 'eximmailer\S*$', l: '172.25.97.18 eximmailer' }
+        - { r: 'eximmailer2\S*$', l: '172.24.97.18 eximmailer2' }
+    
+    - name: WARNING IM DISBLING DNS
+      #shell: sed -e "s/^nameserver/#&/" -i /etc/resolv.conf
+      action: replace 
+        dest=/etc/resolv.conf
+        regexp='^(.*)$' 
+        replace='#\1  removed by ansible' 
+        backup=yes
+
+    - name: Ensure /etc/exim/ dir exists
+      action: file 
+        path=/etc/exim/
+        state=directory
+  
+    - name: push exim config
+      action: copy 
+        src=exim.conf 
+        dest=/etc/exim/exim.conf 
+        backup=yes
+      
+    tags: exim
+
+ ##########################################################
+ # RHEL specific stuff
+ # ########################################################
+ #
+
+  - block:
+    - name: push epel repo files
+      action: copy 
+        src=epel-release-{{ansible_distribution_major_version}}.rpm 
+        dest=/var/tmp 
+        backup=yes
+  
+    - name: install 
+      action: yum 
+        disablerepo="*"
+        name=/var/tmp/epel-release-{{ansible_distribution_major_version}}.rpm 
+        state=present
+  
+    - name: install exim
+      action: yum 
+        name=exim 
+        state=present
+      when: ansible_distribution_major_version > "5" 
+  
+    - name: push exim config
+      action: copy 
+        src=exim.conf 
+        dest=/etc/exim/exim.conf 
+        backup=yes
+    
+    - name: remove other mta
+      action: yum 
+        name={{item}}
+        state=absent
+      with_items:
+        - sendmail
+        - postfix
+      ignore_errors: yes
+      
+    
+    - name: tweak exim start part1
+      action: lineinfile 
+        dest=/etc/sysconfig/exim 
+        regexp="^DAEMON=" 
+        line="DAEMON=yes" 
+        create=yes
+    
+    - name: tweak exim start part2
+      action: lineinfile 
+        dest=/etc/sysconfig/exim 
+        regexp="QUEUE=" 
+        line="QUEUE=5m" 
+        create=yes
+  
+    - name: start exim forever
+      action: service 
+        name=exim 
+        state=started   
+        enabled=yes
+
+###############################################
+# END RHEL tasks
+###############################################
+
+    when: ansible_os_family | lower  == "redhat"
+    tags: 
+      - exim
+      - exim-rhel
+  
+  
+  
+  

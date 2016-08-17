@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# chkconfig: - 10 14
+# description: Zabbix agent pre scripts
+# processname: zabbix_agent_pre
+#
+
+### BEGIN INIT INFO
+# Provides: zabbix-agent-prestart
+# Required-Start: $local_fs $network
+# Required-Stop: $local_fs $network
+# Should-Start: zabbix-pre
+# Should-Stop: zabbix zabbix-proxy
+# X-Start-Before: zabbix-agent
+# Default-Start: 2 3 5
+# Default-Stop: 0 1 2 3 4 5 6
+# Short-Description: Run zabbix pre scripts before agent
+# Description: Zabbix agent pre scripts
+### END INIT INFO
+
+start()
+{
+  echo -n "Stopping zabbix-prestart"
+  # normalize the hostname
+  echo "Hostname="`hostname| tr 'A-Z' 'a-z'` > /etc/zabbix/agentd.conf.d/host.conf
+  # bind to mgmt only
+  for i in mgmt build
+    do
+      /sbin/ip addr show $i  && /sbin/ip addr show $i | awk '/ inet / { gsub(/\/[0-9]+$/,"",$2); print "ListenIP="$2}' > /etc/zabbix/agentd.conf.d/listen.conf 
+    done
+  # spec the CONF File
+  echo 'CONF="/etc/zabbix/agentd.conf"' >> /etc/sysconfig/zabbix-agent
+  echo 'conf="/etc/zabbix/agentd.conf"' >> /etc/sysconfig/zabbix-agent
+
+}
+
+stop()
+{
+  echo -n "Stopping zabbix-prestart"
+}
+
+restart()
+{
+    stop
+    start
+}
+
+case "$1" in
+    start|stop|restart)
+        $1
+        ;;
+    force-reload)
+        restart
+        ;;
+    status)
+        status -p $pidfile $prog
+        ;;
+    try-restart|condrestart)
+        if status $prog >/dev/null ; then
+            restart
+        fi
+        ;;
+    reload)
+        action $"Service ${0##*/} does not support the reload action: " /bin/false
+        exit 3
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|try-restart|force-reload}"
+        exit 2
+        ;;
+esac
+

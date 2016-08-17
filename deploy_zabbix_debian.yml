@@ -1,0 +1,73 @@
+---
+- hosts: all
+  vars:
+     proxy: "{{ lookup('env','ANS_PROXY') }}"
+     rs: "{{ lookup('env','RSYNC_PROXY') }}"
+
+  tasks:
+
+  - name: make tmpdir
+    action: file path=/var/tmp/pkg state=directory owner=root mode=0755
+
+  - name: Add GNU key
+    shell: wget -qO - http://repo.zabbix.com/zabbix-official-repo.key  | apt-key add -
+
+  - name: Add apt repo
+    action: lineinfile dest=/etc/apt/sources.list.d/zabbix regexp='^deb http://repo.zabbix.com/zabbix' line='deb http://repo.zabbix.com/zabbix/2.4/{{ansible_distribution|lower}} {{ansible_distribution_release}} main' state=present
+    when: ansible_distribution_release == 'precise' or  ansible_distribution_release == 'trusty'
+
+  - name: Add apt repo - lucid
+    action: lineinfile dest=/etc/apt/sources.list regexp='^deb http://repo.zabbix.com/zabbix/' line='deb http://repo.zabbix.com/zabbix/2.0/{{ansible_distribution|lower}} {{ansible_distribution_release}} main' state=present
+    when: ansible_distribution_release == 'lucid'
+
+  - name: install agents
+    action: apt name={{ item }} state=present update_cache=yes 
+    environment:
+      http_proxy: http://127.0.0.1:{{proxy}}
+    with_items:
+      - zabbix-sender
+      - zabbix-get
+      - zabbix-agent
+    #  - facter
+
+  - name: pull zabbix config
+    action: command /usr/bin/rsync --port={{ rs }} -aP 127.0.0.1::zabbix/linux/{{item}}/ /{{item}}/ 
+    with_items:
+      - opt
+      - etc
+
+  - name: Fudge around the config files
+    stat: path=/etc/zabbix/zabbix_agentd.conf
+    register: fudge
+
+  - name: Move the fudge
+    command: mv /etc/zabbix/zabbix_agentd.conf /etc/zabbix/zabbix_agent.conf.fudged
+    when: fudge.stat.exists
+
+  - name: link the fudge
+    action: file src=/etc/zabbix/agentd.conf dest=/etc/zabbix/zabbix_agentd.conf owner=zabbix group=zabbix state=link
+
+  - name: put zabbix entries in hosts
+    action: lineinfile dest=/etc/hosts regexp="192.168.253.5\W*{{item}}$" line="192.168.253.5 {{item}} "  state=present
+    with_items:
+      - zabbix_server
+      - zabbix_server2
+      - zabbix_active_server
+
+  - name: chowming
+    shell: chown -R zabbix:zabbix /etc/zabbix /var/log/zabbix /var/run/zabbix
+
+  - name: Fix lucid
+    action: lineinfile dest=/etc/zabbix/agentd.conf regexp='HostMetadataItem' state=absent
+
+  - name: start zabbix agent
+    action: service name=zabbix-agent state=restarted
+
+#  - name: start zabbix agent on boot
+#   action: command /sbin/chkconfig zabbix-agent on
+
+  - name: sudo checks - zabbix
+    action: lineinfile dest=/etc/sudoers.d/zabbix regexp='^zabbix' line='zabbix ALL=(ALL) NOPASSWD:ALL'  state=present create=yes mode=0440
+
+
+

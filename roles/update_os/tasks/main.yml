@@ -1,0 +1,22 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+  # make sure we are subscribed to 6.5 if we are an E5APP
+  - include: E5APP.yml
+    when: "'E5APP' in group_names and  {{done_update_os|default(0)}} < 1"
+
+    tags:
+      - update_os
+
+  - name: Update all packages
+    action: yum
+      name=*
+      state=latest
+    ignore_errors: True
+    tags:
+      - update_os
+    when: "ansible_distribution | lower  == 'redhat' and {{done_update_os|default(0)}} < 1"
+
+  - set_fact: done_update_os=1
+

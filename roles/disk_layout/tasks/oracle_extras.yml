@@ -1,0 +1,12 @@
+---
+  - name: Fix shared ram
+    action: mount
+      fstype=tmpfs    
+      name=/dev/shm
+      opts='defaults,size=90%'
+      src=none
+      state=mounted
+
+
+
+

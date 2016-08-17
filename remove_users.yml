@@ -1,0 +1,17 @@
+---
+- hosts: all
+  vars_files:
+  - ~/.userlist.yml
+  gather_facts: no
+
+
+  tasks:
+  - name: remove user
+    action: user name={{ item.value.name }} state=absent group={{item.value.group}} append=yes password={{item.value.password}} groups={{item.value.groups}} update_password=on_create
+    with_dict: users
+
+  - name: remove home dir
+    shell: find /home/{{ item.value.name }} -type f -exec rm -f {} \; ; find /home/{{ item.value.name }} -type d -exec rmdir -f {} \; 
+    with_dict: users
+
+

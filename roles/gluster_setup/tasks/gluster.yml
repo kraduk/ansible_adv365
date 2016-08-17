@@ -1,0 +1,41 @@
+---
+- name: install packages
+  action: yum
+    name={{item}}
+    state=present
+  with_items:
+    - glusterfs
+    - glusterfs-client
+
+- name: Ensure the GlusterFS service is running (CentOS)
+  action: service 
+    name=glusterd 
+    state=started
+    enabled=yes
+
+- name: push disk clean
+  action: copy
+    src=clean_disks.sh
+    dest=/tmp/clean_disks.sh
+    mode=755
+
+- name: clean disks
+  shell: /tmp/clean_disks.sh
+  register: disks
+
+- name: create lvs
+  action: lvol
+    lv=brick_{{item}}
+    pvs={{item}}
+    size=100%FREE
+    state=present
+    vg=gl_{{item}}
+  with_items: "{{disks.stdout}}"
+
+
+
+
+
+  
+
+

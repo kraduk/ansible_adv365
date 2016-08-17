@@ -1,0 +1,23 @@
+---
+# we need to fix to 6.5 channel for E5
+# you cant do this with subscription manager
+# but you can with legacy, so we strip it back
+# and hard attache to 6/5 for updates
+
+  - name: fix broken cert location
+    action: file
+      src=/usr/share/rhn/RHNS-CA-CERT 
+      path=/usr/share/rhn/RHN-ORG-TRUSTED-SSL-CERT
+      state=link
+
+
+
+  - name: remove current subscriptions
+    shell: subscription-manager remove --all
+
+  - name: attach to channel 6.5
+    # have to use avar to get round "=" not working in command or shell 
+    command: "{{subscribe}}"
+
+
+

@@ -1,0 +1,6 @@
+---
+- hosts: all
+
+  tasks:
+  - name: sudo checks - dba - oracle
+    action: lineinfile dest=/etc/sudoers.d/dba regexp="^\W*%dba" line="%dba ALL=(root) /bin/su - oracle" state=present create=yes mode=0440

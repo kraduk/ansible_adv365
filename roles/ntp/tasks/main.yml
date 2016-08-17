@@ -1,0 +1,13 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+  - include: ntp.yml packages="['ntp', 'ntpdate' ]" service=ntpd 
+    tags: ntp
+    when: ansible_os_family | lower  == "redhat"
+    
+  - include: ntp.yml packages="['ntpd', 'ntpdate' ]" service=ntpd
+    tags: ntp
+    when: ansible_os_family | lower  == "debian"
+
+

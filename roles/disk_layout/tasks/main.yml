@@ -1,0 +1,15 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+  - block:
+    # 1st pull in the correct disk layouts for the host
+    - include: import_vars.yml
+    - include: build_tasks.yml
+    - include: oracle_extras.yml
+      when: "'Oracle' in group_names"
+    - set_fact: disk_layout_done=1
+    - debug: msg="disk layout {{disk_layout_done}}"
+
+    tags: disk_layout
+

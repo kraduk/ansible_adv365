@@ -1,0 +1,39 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+
+  # this fixes the generic yum case for all RHEL derived systems
+
+  - name: tweak yum.conf
+    action: lineinfile 
+      regexp="^proxy=http://127.0.0.1:{{proxy}}" 
+      line="proxy=http://127.0.0.1:{{proxy}}" 
+      dest=/etc/yum.conf 
+      state=present
+    when: ansible_os_family | lower == 'redhat'
+    tags:
+      - proxy
+      - rhn_reg
+
+  # fix RH specific systems so yum will use proxy
+  - block:
+    # start RH block tasks #
+    
+    - name: push up2date conf file
+      action: template
+        dest=/etc/sysconfig/rhn/up2date
+        src=up2date
+        mode=600
+        owner=root
+        group=root
+        backup=yes
+ 
+    # end RH block tasks #
+
+    when: ansible_distribution | lower == 'redhat'
+    tags:
+      - proxy
+      - rhn_reg
+    
+

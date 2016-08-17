@@ -1,0 +1,18 @@
+---
+- debug: msg="start of {{role_path|basename}} role"
+  tags: always
+
+
+- name: fix hosts file
+  action: lineinfile 
+    dest=/etc/hosts 
+    regexp='{{item.a}}\W*{{item.b}}' 
+    line='{{item.a}} {{item.b}}' 
+    state=present 
+  with_items:
+    - { a: '10.178.97.100', b: 'abs' }
+    - { a: '192.168.253.5', b: 'GR2A365XMGMTV01' }
+  tags: hosts_file
+
+- set_fact: done_hosts_file=1
+

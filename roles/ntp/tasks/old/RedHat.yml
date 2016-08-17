@@ -1,0 +1,11 @@
+---
+  - name: fix anoying RH proxy rubbish
+    action: lineinfile dest=/etc/yum.conf regexp='^proxy=' line='proxy=http://127.0.0.1:{{proxy}}' state=present
+
+  - name: install ntpd
+    environment:
+      http_proxy: http://127.0.0.1:{{proxy}}
+    yum: name=ntp state=installed
+
+
+

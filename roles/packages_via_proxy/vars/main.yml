@@ -1,0 +1,4 @@
+---
+  proxy: "{{ lookup('env','ANS_PROXY') }}"
+  rs: "{{ lookup('env','RSYNC_PROXY') }}"
+

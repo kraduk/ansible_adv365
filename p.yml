@@ -1,0 +1,16 @@
+---
+- hosts: all
+  vars:
+     proxy: "{{ lookup('env','ANS_PROXY') }}"
+     rs: "{{ lookup('env','RSYNC_PROXY') }}"
+
+  tasks:
+
+  - name: Mod systemd script if its present
+    action: lineinfile dest=/usr/lib/systemd/system/zabbix-agent.service regexp='^ExecStart=/usr/sbin/zabbix_agentd' line='ExecStart=". /etc/sysconfig/zabbix_agent; /usr/sbin/zabbix_agentd -c $CONFFILE"'
+
+  - name: start zabbix agent
+    action: service name=zabbix-agent state=restarted
+
+  - name: start zabbix agent on boot
+    action: command /sbin/chkconfig zabbix-agent on

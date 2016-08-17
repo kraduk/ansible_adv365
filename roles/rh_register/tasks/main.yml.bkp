@@ -1,0 +1,14 @@
+---
+# proxy stuff is fixed by dependent role defined in meta/main.xml
+  - name: Register RHEL system
+    action: rhn_register 
+     state=present
+     username=webabacus-webap-01
+     password=h0lycr4p!
+    environment:
+      http_proxy: http://127.0.0.1:{{proxy}}
+    when:  ansible_distribution | lower  == 'redhat'
+    tags:
+      - proxy
+      - rhn_reg
+

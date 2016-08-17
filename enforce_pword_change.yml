@@ -1,0 +1,10 @@
+---
+- hosts: all
+  gather_facts: no
+  vars_files:
+  - ~/.userlist.yml
+
+  tasks:
+  - name: Force password reset
+    shell: chage -d 100 -M 90 {{ item.value.name }}
+    with_dict: users

@@ -1,0 +1,45 @@
+---
+  lvs:
+    u01:
+      vg: u01
+      lv: oracle
+      size: +100%FREE
+      mount: /u01
+      fs: ext4
+      opts: noatime
+      owner: oracle
+      group: oinstall
+      create: yes
+      dev: sdc
+    u02:
+      vg: u02
+      lv: oracle
+      size: +100%FREE
+      mount: /u02
+      fs: ext4
+      opts: noatime
+      owner: oracle
+      group: oinstall
+      create: yes
+      dev: sdd
+    u03:
+      vg: u03
+      lv: oracle
+      size: +100%FREE
+      mount: /u03
+      fs: ext4
+      opts: noatime
+      owner: oracle
+      group: oinstall
+      create: yes
+      dev: sde
+
+  resize:
+    tmp:
+      vg: system
+      lv: tmp
+      size: 8192
+      create: no
+      fs: ext4
+
+

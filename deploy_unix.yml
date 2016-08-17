@@ -1,0 +1,68 @@
+---
+- hosts: all
+  vars_files:
+  - ~/.userlist.yml
+
+  tasks:
+
+  - name: fix hosts file
+    action: lineinfile dest=/etc/hosts regexp='192.168.253.5\W*GR2A365XMGMTV01' line='192.168.253.5 GR2A365XMGMTV01' state=present 
+
+  - name: sudo checks - dir
+    action: file path=/etc/sudoers.d state=directory owner=root mode=0755
+  
+  - name: sudo checks - include
+    action: lineinfile dest=/etc/sudoers regexp="#includedir /etc/sudoers.d" line="#includedir /etc/sudoers.d" state=present create=yes
+  
+  - name: sudo checks - uts
+    action: lineinfile dest=/etc/sudoers.d/uts regexp="^\W*%uts " line="%uts ALL=(ALL) ALL" state=present create=yes mode=0440
+  
+  - name: sudo checks - uts-backup
+    action: lineinfile dest=/etc/sudoers.d/utsb regexp="^\W*%utsb" line="%utsb ALL=(ALL) ALL" state=present create=yes mode=0440
+  
+  - name: sudo checks - ansible
+    action: lineinfile dest=/etc/sudoers.d/ansible regexp='^ansible' line='ansible ALL=(ALL)  NOPASSWD:ALL'  state=present create=yes mode=0440
+
+  - name: sudo checks - dba
+    action: lineinfile dest=/etc/sudoers.d/dba regexp='^%dba' line='%dba ALL=/bin/su - oracle'  state=present create=yes mode=0440
+
+  - name: sudo checks - remove legacy clutter
+    action: file path=/etc/sudoers.d/ut state=absent
+
+  - name: Setup uts group
+    action: group name=uts state=present
+  
+  - name: Setup uts_backup group
+    action: group name=utsb state=present
+  
+  - name: Setup ut group
+    action: group name=ut state=present
+
+  - name: Setup users groups
+    action: group name={{item.key}} state=present
+    with_dict: grps
+
+  - name: work out home
+    shell:  cd .. ;  pwd  
+    register: hd
+
+  - name: add user
+    action: user name={{ item.value.name }} state=present group={{item.value.group}} append=yes password={{item.value.password}} groups={{item.value.groups}} comment="{{item.value.comment}}" home={{ hd.stdout }}/{{ item.value.name }} 
+    with_dict: users
+    ignore_errors: yes
+
+
+  - name: create .ssh
+    action: file path={{ hd.stdout }}/{{ item.value.name }}/.ssh state=directory owner={{ item.value.name }} mode=0700
+    with_dict: users
+
+ 
+
+  - name: push keys
+    action: copy src=~/.ansible/tmp/{{ item.value.name }}.keys dest={{ hd.stdout }}/{{ item.value.name }}/.ssh/authorized_keys owner={{ item.value.name }} group={{item.value.group}} mode=0600
+    with_dict: users
+
+  - name: RESET ANSIBLE user password
+    action: user name=ansible state=present group=ansible append=yes password=$6$yHNaxmAa$1ceof0w4hNw5GtiIWmfCkd9NUDvDVySo/mSqGqFhwWc7glDf9pj8or.Ex9A8l.ShsCOogZJBRiQRITgeoNsk60 groups=uts,utsb comment="Ansible deployment account" home={{ hd.stdout }}/ansible
+    ignore_errors: yes
+

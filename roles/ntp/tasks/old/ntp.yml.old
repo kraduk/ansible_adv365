@@ -1,0 +1,100 @@
+---
+
+  - block:
+    # RHEL specific stuff
+    - name: install ntpd
+      action: yum
+        name=ntp 
+        state=installed
+
+    # END RHEL specific stuff
+    when: ansible_os_family | lower  == "redhat"
+  
+  - name: Put entry in hosts
+    action: lineinfile 
+      dest=/etc/hosts 
+      regexp='^192.168.253.5 ntp' 
+      line='192.168.253.5 ntp'
+  
+  - name: get gateways  
+    shell: netstat -rn | awk '$2 ~ /^[1-9]/ {print $2}' | sort -u
+    register: gate
+
+  - name: Find ntp.conf 
+    shell: find /etc/ -type f -name ntp.conf
+    register: ntp_loc
+
+  - name: Clean raw ip MGMT box in ntp.conf  pt1
+    action: lineinfile 
+      dest={{ntp_loc.stdout}} 
+      regexp='^server 192.168.253.5'  
+      state=absent 
+      create=yes
+    ignore_errors: yes
+  
+  - name: Clean raw ip MGMT box in ntp.conf  pt2
+    action: lineinfile 
+      dest={{ntp_loc.stdout}} 
+      regexp='^restrict 192.168.253.5' 
+      state=absent
+    ignore_errors: yes
+ 
+  - name: PUT hosts in ntp.conf t1
+    action: lineinfile 
+      dest={{ntp_loc.stdout}}  
+      regexp='^restrict {{ item }}' 
+      line='restrict {{ item }}'
+    with_flattened: 
+      - "{{gate.stdout_lines}}"
+      - 192.168.253.5
+
+  - name: PUT hosts in in ntp.conf  pt2
+    action: lineinfile 
+      dest={{ntp_loc.stdout}}  
+      regexp='^server {{item}}' 
+      line='server {{item}}' 
+      create=yes
+    with_flattened: 
+      - "{{gate.stdout_lines}}"
+      - 192.168.253.5
+
+
+- name: stop ntp service
+  action: service 
+    name=ntpd 
+    state=stopped
+  ignore_errors: yes
+  when: ansible_os_family | lower  == "redhat"
+
+  - name: stop ntp service
+    action: service 
+      name=ntpd 
+      state=stopped
+    ignore_errors: yes
+    when: ansible_os_family | lower  == "debian"
+  
+  - name: do the ntpdate bit
+    shell: /usr/sbin/ntpdate {{item}}
+    with_flattened: 
+      - "{{gate.stdout_lines}}"
+      - 192.168.253.5
+    ignore_errors: yes
+
+  - name: restart ntp service
+    action: service 
+      name=ntpd 
+      state=restarted 
+      enabled=yes
+    ignore_errors: yes
+    when: ansible_os_family | lower  == "redhat"
+  
+  - name: restart ntp service
+    action: service 
+      name=ntpd 
+      state=restarted 
+      enabled=yes
+    ignore_errors: yes
+    when: ansible_os_family | lower  == "debian"
+
+
+

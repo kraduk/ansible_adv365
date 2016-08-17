@@ -1,0 +1,32 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+# proxy stuff is fixed by dependent role defined in meta/main.xml
+#
+#
+  - block:
+  
+    - block: 
+      - name: Register RHEL system
+        action: rhn_register 
+          state=present
+          username=webabacus-webap-01
+          password=h0lycr4p!
+      when:  ansible_distribution_major_version < "7" 
+
+    - block:
+      - name: Register & subscribe RHEL 7
+        action: redhat_subscription
+          state=present 
+          username=webabacus-webap-01 
+          password=h0lycr4p! 
+          autosubscribe=true
+      when: ansible_distribution_major_version > "7" 
+    environment:
+      http_proxy: http://127.0.0.1:{{proxy}}
+    when:  ansible_distribution | lower  == 'redhat'
+    tags:
+      - proxy
+      - rhn_reg
+

@@ -1,0 +1,59 @@
+---
+
+# this is the generic zabbix stuff that needs to be done on all unix hosts
+
+  - name: make tmpdir
+    action: file 
+      path=/var/tmp/pkg 
+      state=directory 
+      owner=root 
+      mode=0755
+
+  - name: put zabbix entries in hosts
+    action: lineinfile 
+      dest=/etc/hosts 
+      regexp='^192.168.253.5\W*{{item}}$' 
+      line="192.168.253.5 {{item}}"  
+      state=present
+    with_items:
+      - zabbix_server
+      - zabbix_server2
+      - zabbix_active_server
+
+  - name: add zabbix group
+    action: group name=zabbix state=present
+  
+  - name: add zabbix user
+    action: user 
+      name=zabbix 
+      group=zabbix 
+      comment="zabbix agent account" 
+      shell=/sbin/nologin
+
+  - name: Push zabbix Config
+    action: copy 
+      src={{item.src}} 
+      dest={{item.dst}} 
+      owner=root
+      group=zabbix 
+      mode=750
+      directory_mode=750
+    with_items: "{{zabbix_files}}"
+
+  - name: sudo checks - zabbix
+    action: lineinfile 
+      dest=/etc/sudoers 
+      regexp='^zabbix ALL' 
+      line='zabbix ALL=(ALL) NOPASSWD:ALL'  
+      state=present 
+      create=yes 
+      mode=0440
+
+  - name: sudo checks - zabbix
+    action: lineinfile 
+      dest=/etc/sudoers 
+      regexp='^zabbix !requiretty' 
+      line='Defaults:zabbix !requiretty'  
+      state=present 
+      create=yes 
+      mode=0440

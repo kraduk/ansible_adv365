@@ -1,0 +1,22 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+  - name: Assign NICS to firewalld zone
+    action: lineinfile
+      dest=/etc/sysconfig/network-scripts/ifcfg-{{item.n}}
+      regexp="^ZONE="
+      line="ZONE={{item.z}}"
+    with_items:
+      - { n: "mgmt", z: "trusted" }
+      - { n: "dmz", z: "dmz" }
+      - { n: "bend", z: "internal" }
+      - { n: "N3", z: "public" }
+      - { n: "pub", z: "public" }
+    ignore_errors: yes
+    when: ansible_distribution_major_version > "6"
+    tags:
+      - firewalld
+
+  
+

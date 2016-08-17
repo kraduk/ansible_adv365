@@ -1,0 +1,68 @@
+---
+  - debug: msg='{{lvs}}'
+  - name: create VGS
+    action: lvg
+      vg="{{ item.value.vg }}"
+      pvs="/dev/{{ item.value.dev }}"
+    with_dict: "{{lvs| default({})}}"
+
+  - name: create LVs
+    action: lvol
+      vg={{ item.value.vg }} 
+      lv={{ item.value.lv }} 
+      size={{ item.value.size }} 
+      state=present 
+    with_dict: "{{lvs| default({})}}"
+  
+  - name: resize LVs
+    action: lvol
+      vg={{ item.value.vg }} 
+      lv={{ item.value.lv }} 
+      size={{ item.value.size }} 
+      state=present 
+      force=yes
+    with_dict: "{{resize| default({})}}"
+
+  - name: Create mount dirs
+    action: file
+      state=directory
+      owner={{ item.value.owner|default(omit) }}
+      group={{ item.value.group|default(omit) }}
+      path={{ item.value.mount }}
+    with_dict: "{{lvs| default({})}}"
+
+  - name: create file systems
+    action: filesystem
+      fstype={{ item.value.fs }} 
+      dev="/dev/{{ item.value.vg }}/{{ item.value.lv }}"
+    with_dict: "{{lvs| default({})}}"
+
+
+  - name: mount file systems
+    action: mount
+      fstype={{ item.value.fs }} 
+      src="/dev/{{ item.value.vg }}/{{ item.value.lv }}" 
+      state=mounted 
+      opts={{ item.value.opts }} 
+      name={{ item.value.mount }}
+    with_dict: "{{lvs| default({})}}"
+    
+  - name: resize filesystems
+    action: filesystem
+      dev="/dev/{{ item.value.vg }}/{{ item.value.lv }}"
+      resizefs=yes
+      fstype={{ item.value.fs }} 
+    with_dict: "{{resize| default({})}}"
+    
+  - name: fix owners
+    action: file
+      state=directory
+      owner={{ item.value.owner|default(omit) }}
+      group={{ item.value.group|default(omit) }}
+      path={{ item.value.mount }}
+    with_dict: "{{lvs| default({})}}"
+
+
+
+
+

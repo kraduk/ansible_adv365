@@ -1,0 +1,23 @@
+---
+
+  lvs:
+    cedar:
+      vg: t1
+      lv: cedar
+      size: +100%FREE
+      mount: /cedar
+      fs: ext4
+      opts: noatime
+      dev: sdc
+      create: yes
+
+  resize:
+    home:
+      vg: system
+      lv: home
+      size: 10G
+      mount: /home
+      fs: ext4
+      opts: noatime
+      format: no
+

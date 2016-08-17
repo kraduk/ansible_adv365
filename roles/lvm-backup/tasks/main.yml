@@ -1,0 +1,37 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+
+  - block:
+    # start RHEL block
+    - name: where is the backup util
+      action: shell find /sbin /usr/sbin/ -name vgcfgbackup 
+      register: vgcfgbackup
+  
+    - name: Sort rotation of backups and sheduling
+      action: template
+        dest="/etc/logrotate.d/lvm-backups"
+        src="logrotate.conf"
+        mode=600
+        owner=root
+        group=root
+      ignore_errors: True
+
+    - name: create arch dir
+      action: file
+        state=directory
+        path=/etc/lvm/backup/arch
+        mode=755
+        owner=root
+        group=root
+
+  
+    - name: backup LVM config
+      action:  shell "{{ vgcfgbackup.stdout }}"
+      ignore_errors: True
+    
+    
+      # end RHEL block
+    tags: lvm-conf
+    when: ansible_os_family | lower  == 'redhat'

@@ -1,0 +1,3 @@
+---
+dependencies:
+  - { role: setup-yum, when: ansible_os_family | lower == 'redhat' }

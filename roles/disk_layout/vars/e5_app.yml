@@ -1,0 +1,21 @@
+---
+lvs:
+  e5:
+    vg: t1
+    lv: e5
+    size: +100%FREE
+    mount: /e5
+    fs: ext4
+    opts: noatime
+    format: yes
+    dev: sdc
+
+resize:
+  home:
+    vg: system
+    lv: home
+    size: 10G
+    mount: /home
+    fs: ext4
+    opts: noatime
+    format: no

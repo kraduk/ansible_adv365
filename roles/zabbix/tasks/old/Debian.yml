@@ -1,0 +1,40 @@
+---
+  - name: Add GNU key
+    shell: wget -qO - http://repo.zabbix.com/zabbix-official-repo.key  | apt-key add -
+
+  - name: Add apt repo
+    action: lineinfile dest=/etc/apt/sources.list.d/zabbix regexp='^deb http://repo.zabbix.com/zabbix' line='deb http://repo.zabbix.com/zabbix/2.4/{{ansible_distribution|lower}} {{ansible_distribution_release}} main' state=present
+    when: ansible_distribution_release == 'precise' or  ansible_distribution_release == 'trusty'
+
+  - name: Add apt repo - lucid
+    action: lineinfile dest=/etc/apt/sources.list regexp='^deb http://repo.zabbix.com/zabbix/' line='deb http://repo.zabbix.com/zabbix/2.0/{{ansible_distribution|lower}} {{ansible_distribution_release}} main' state=present
+    when: ansible_distribution_release == 'lucid'
+
+  - name: install agents
+    action: apt name={{ item }} state=present update_cache=yes 
+    environment:
+      http_proxy: http://127.0.0.1:{{proxy}}
+    with_items:
+      - zabbix-sender
+      - zabbix-get
+      - zabbix-agent
+    #  - facter
+
+
+  - name: Fudge around the config files
+    stat: path=/etc/zabbix/zabbix_agentd.conf
+    register: fudge
+
+  - name: Move the fudge
+    command: mv /etc/zabbix/zabbix_agentd.conf /etc/zabbix/zabbix_agent.conf.fudged
+    when: fudge.stat.exists
+
+  - name: link the fudge
+    action: file src=/etc/zabbix/agentd.conf dest=/etc/zabbix/zabbix_agentd.conf owner=zabbix group=zabbix state=link
+
+  - name: chowming
+    shell: chown -R zabbix:zabbix /etc/zabbix /var/log/zabbix /var/run/zabbix
+
+  - name: Fix lucid
+    action: lineinfile dest=/etc/zabbix/agentd.conf regexp='HostMetadataItem' state=absent
+

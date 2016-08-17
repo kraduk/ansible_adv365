@@ -1,0 +1,42 @@
+---
+- hosts: all
+  gather_facts: yes
+
+  vars:
+     rs: "{{ lookup('env','RSYNC_PROXY') }}"
+ 
+  vars_prompt:
+     hub_ip: "What is the IP address of the Nimsoft Hub this server will connect to?"
+     hub_name: "What is the name of the Nimsoft Hub this server will connect to?"
+     hub_server_name: "What is the server name of the Nimsoft Hub this server will connect to?"
+
+  tasks:
+
+  - name: pull nimsoft config
+    action: command /usr/bin/rsync --port={{ rs }} -aP 127.0.0.1::nimsoft/ /opt/nimsoft/
+
+  - name: set nimsoft hub name in robot.cfg
+    action: lineinfile dest=/opt/nimsoft/robot/robot.cfg regexp='   hub = ' line='   hub = {{ hub_name }} ' state=present
+  
+  - name: set nimsoft hub IP address in robot.cfg
+    action: lineinfile dest=/opt/nimsoft/robot/robot.cfg regexp='   hubip = ' line='   hubip = {{ hub_ip }} ' state=present
+
+  - name: set robotname in robot.cfg
+    action: lineinfile dest=/opt/nimsoft/robot/robot.cfg regexp='   robotname = ' line='   robotname = {{ ansible_hostname }} ' state=present  
+  
+  - name: set robotip in robot.cfg
+    action: lineinfile dest=/opt/nimsoft/robot/robot.cfg regexp='   robotip = ' line='   robotip = {{ ansible_mgmt.ipv4.address }} ' state=present  
+  
+  - name: set hubrobotname in robot.cfg  
+    action: lineinfile dest=/opt/nimsoft/robot/robot.cfg regexp='   hubrobotname = ' line='   hubrobotname = {{ hub_server_name }} ' state=present
+
+  - name: move start-up scripts in /etc/init.d
+    action: command /bin/cp /opt/nimsoft/startup/nimbus /etc/init.d/
+  
+  - name: start nimsoft agent on boot
+    when: ansible_os_family == "RedHat" and
+          ansible_distribution_major_version < "7"
+    shell: /sbin/chkconfig --add nimbus;/sbin/chkconfig nimbus on
+
+  - name: restart nimsoft agent
+    service: name=nimbus state=restarted

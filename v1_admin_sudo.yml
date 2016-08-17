@@ -1,0 +1,6 @@
+---
+- hosts: all
+
+  tasks:
+  - name: sudo checks - v1_admin
+    action: lineinfile dest=/etc/sudoers.d/v1_admin regexp="^\W*%v1_admin" line="%v1_admin ALL=(root) /bin/su - efin,/bin/su - oracle,/bin/su - dbfax,/bin/su - prod,/bin/su - test,/bin/su - devl,/bin/su - trng" state=present create=yes mode=0440

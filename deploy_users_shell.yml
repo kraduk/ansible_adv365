@@ -1,0 +1,15 @@
+---
+- hosts: all
+  gather_facts: no
+  vars_files:
+  - ~/.userlist.yml
+
+  tasks:
+  - name: Setup users groups
+    action: group name={{item.key}} state=present
+    with_dict: grps
+
+  - name: add user
+    action: user name={{ item.value.name }} state=present group={{item.value.group}} append=yes password={{item.value.password}} update_password=on_create groups={{item.value.groups}} comment="{{item.value.comment}}" shell={{ item.value.shell }}
+    with_dict: users
+

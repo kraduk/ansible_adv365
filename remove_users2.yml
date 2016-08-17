@@ -1,0 +1,15 @@
+---
+- hosts: all
+  vars_files:
+  - ~/.userlist.yml
+
+  tasks:
+  - name: Setup users groups
+    action: group name={{item.key}} state=present
+    with_dict: grps
+
+  - name: add user
+    action: user name={{ item.value.name }} state=absent group={{item.value.group}} append=yes password={{item.value.password}} groups={{item.value.groups}} 
+    with_dict: users
+
+

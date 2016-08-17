@@ -1,0 +1,19 @@
+---
+- hosts: all
+  vars:
+     proxy: "{{ lookup('env','ANS_PROXY') }}"
+     rs: "{{ lookup('env','RSYNC_PROXY') }}"
+  gather_facts: no
+
+  tasks:
+  - name: pull zabbix config
+    action: command /usr/bin/rsync --port={{ rs }} -aP 127.0.0.1::zabbix/linux/{{item}}/ /{{item}}/ 
+    with_items:
+      - opt
+      - etc
+
+
+  - name: start zabbix agent
+    action: service name=zabbix-agent state=restarted
+
+

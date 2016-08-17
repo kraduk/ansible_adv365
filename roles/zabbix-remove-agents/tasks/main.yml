@@ -1,0 +1,15 @@
+---
+  - debug: msg="start of {{role_path|basename}} role"
+    tags: always
+
+  - include: redhat.yml
+    when: ansible_os_family | lower == 'redhat'
+    tags:
+      - zabbix-remove
+      - zabbix-rhel
+      
+  - include: debian.yml
+    when: ansible_os_family | lower == 'debian'
+    tags:
+      - zabbix-remove
+      - zabbix-deb
