@@ -1,5 +1,0 @@
----
-- include: hosts_file.yml
-  when: " {{done_hosts_file|default(0)}} < 1"
-
-

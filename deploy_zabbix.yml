@@ -1,0 +1,68 @@
+---
+- hosts: all
+  vars:
+     proxy: "{{ lookup('env','ANS_PROXY') }}"
+     rs: "{{ lookup('env','RSYNC_PROXY') }}"
+
+  tasks:
+
+  - name: make tmpdir
+    action: file path=/var/tmp/pkg state=directory owner=root mode=0755
+
+  - name: Add repo keys
+    action: copy src={{ item }} dest=/var/tmp/pkg/ mode=644 owner=root group=root
+    with_fileglob:
+      - /usr/local/scripts/ansible/files/repofiles/{{ansible_distribution_major_version}}/*.rpm
+  
+  - name: fix anoying RH proxy rubbish
+    action: lineinfile dest=/etc/yum.conf regexp='^proxy=' line='proxy=http://127.0.0.1:{{proxy}}' state=present
+
+  - name: Add repos
+    action: yum name=/var/tmp/pkg/{{ item  | basename }} state=present disable_gpg_check=yes disablerepo="*" 
+    with_fileglob:
+      - /usr/local/scripts/ansible/files/repofiles/{{ansible_distribution_major_version}}/*.rpm
+  
+  - name: install agents
+    action: yum name={{ item }} state=present  
+    environment:
+      http_proxy: http://127.0.0.1:{{proxy}}
+    with_items:
+      - zabbix-sender
+      - zabbix-get
+      - zabbix-agent
+    #  - facter
+   
+
+  - name: pull zabbix config
+    action: command /usr/bin/rsync --port={{ rs }} -aP 127.0.0.1::zabbix/linux/{{item}}/ /{{item}}/ 
+    with_items:
+      - opt
+      - etc
+
+  - name: put zabbix entries in hosts
+    action: lineinfile dest=/etc/hosts regexp='^192.168.253.5\W*{{item}}$' line="192.168.253.5 {{item}} "  state=present
+    with_items:
+      - zabbix_server
+      - zabbix_server2
+      - zabbix_active_server
+
+  - name: Mod systemd script if its present
+    action: lineinfile dest=/usr/lib/systemd/system/zabbix-agent.service regexp='^ExecStart=/usr/sbin/zabbix_agentd$' line='ExecStart=. /etc/sysconfig/zabbix_agent; /usr/sbin/zabbix_agentd -c $CONFFILE'
+    when: ansible_distribution_major_version > "6"
+
+  - name: Fix sysconfig for RHEL7 derived distros
+    when: ansible_distribution_major_version > "6"
+    shell: mv /etc/sysconfig/zabbix-agent.7 /etc/sysconfig/zabbix-agent
+
+  - name: Fix config for RHEL7 derived distros
+    when: ansible_distribution_major_version > "6"
+    action: lineinfile dest=/etc/zabbix/agentd.conf regexp='^PidFile=' line='PidFile=/run/zabbix/zabbix_agentd.pid' state=present
+
+  - name: start zabbix agent
+    action: service name=zabbix-agent state=restarted enabled=yes
+
+  - name: sudo checks - zabbix
+    action: lineinfile dest=/etc/sudoers.d/zabbix regexp='^zabbix' line='zabbix ALL=(ALL) NOPASSWD:ALL'  state=present create=yes mode=0440
+
+
+

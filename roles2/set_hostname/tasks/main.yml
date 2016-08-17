@@ -1,7 +1,0 @@
----
-- include: common.yml 
-  when: "{{done_set_hostname|default(0)}} < 1"
-  tags: set_hostname
-
-
-

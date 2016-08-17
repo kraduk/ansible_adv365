@@ -1,4 +1,0 @@
----
-- include: upgrade.yml
-  when: ansible_os_family | lower == 'redhat'
-

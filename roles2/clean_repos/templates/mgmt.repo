@@ -1,6 +1,0 @@
-[MGMT]
-name=MGMT
-http://GR2A365XMGMTV01/OS/{{ansible_distribution_major_version}}/{{ansible_userspace_architecture}}/
-enabled=0
-gpgcheck=0
-proxy=http://127.0.0.1:{{proxy}}
